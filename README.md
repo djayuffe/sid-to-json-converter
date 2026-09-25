@@ -25,6 +25,19 @@ pnpm run dev
 
 Open the local URL printed by Vite, choose a `.sid` file, set the maximum capture duration and subtune, then run the SID-to-JSON conversion. A MIDI file is generated automatically from a successful capture; either JSON or MIDI can be downloaded from the interface.
 
+## Command-line interface
+
+The same parser, capture runtime and MIDI writer are available without the browser UI. Build once, then run the CLI:
+
+```sh
+pnpm run build:cli
+pnpm run cli -- inspect tune.sid
+pnpm run cli -- sid-to-json tune.sid --seconds 180 --song 1 -o tune.json
+pnpm run cli -- json-to-midi tune.json --quantize none -o tune.mid
+```
+
+`sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `json-to-midi` accepts `--quantize`, `--octave-shift`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Run `pnpm run cli -- --help` for the complete reference.
+
 ## MIDI interpretation
 
 The MIDI export represents musical control data inferred from SID registers, not rendered SID audio. It maps frequency to notes/pitch bend, gate/envelope to note timing and velocity, pulse and filter values to controller data, and SID noise to General MIDI drum notes. Use the JSON export when you need the raw register capture for inspection or a different downstream mapping.
