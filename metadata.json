@@ -1,0 +1,5 @@
+{
+  "name": "SID to JSON Converter",
+  "description": "A high-fidelity C64 SID file parser and emulator that exports playback data to JSON. Features accurate 6502 CPU emulation and full register capture.",
+  "requestFramePermissions": []
+}
