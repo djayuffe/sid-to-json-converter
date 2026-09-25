@@ -31,7 +31,6 @@ class LoggerService {
 
     if (level === 'error') console.error(`[${component}] ${message}`);
     else if (level === 'warn') console.warn(`[${component}] ${message}`);
-    else if (level === 'debug') console.debug(`[${component}] ${message}`);
   }
 
   public subscribe(listener: LogListener) {

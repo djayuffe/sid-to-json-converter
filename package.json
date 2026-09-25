@@ -8,6 +8,7 @@
     "build": "vite build && pnpm run build:cli",
     "build:cli": "node scripts/build-cli.mjs",
     "cli": "node --enable-source-maps dist-cli/sid-json.mjs",
+    "verify": "pnpm run build:cli && node scripts/verify.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

@@ -276,21 +276,26 @@ export class C64System implements Bus {
     this.cpu.execute(1);
     const delta = this.cpu.cycles - prevCycles;
 
-    // 2. Step Peripherals
-    const c1Irq = this.cia1.step(delta);
-    const c2Irq = this.cia2.step(delta);
-    const vicIrq = this.vic.step(delta);
+    this.advancePeripherals(delta);
+  }
+
+  /** Advance CIA, VIC and SID state while the CPU is intentionally idle. */
+  public advancePeripherals(cycles: number, serviceCpuInterrupts: boolean = true) {
+    if (!Number.isFinite(cycles) || cycles <= 0) return;
+    const c1Irq = this.cia1.step(cycles);
+    const c2Irq = this.cia2.step(cycles);
+    const vicIrq = this.vic.step(cycles);
 
     // 3. Trigger Interrupts
-    if (c1Irq || vicIrq) {
+    if (serviceCpuInterrupts && (c1Irq || vicIrq)) {
         this.cpu.irq();
     }
-    if (c2Irq) {
+    if (serviceCpuInterrupts && c2Irq) {
         this.cpu.nmi();
     }
 
     // 4. Update SID
-    this.sid.update(delta, this.ram.subarray(0xD400, 0xD419));
+    this.sid.update(cycles, this.ram.subarray(0xD400, 0xD419));
   }
 
   public read(addr: number): number {

@@ -44,6 +44,9 @@ export class SidPlayer {
     // Run Init
     SystemLogger.log('Player', `Executing Init at $${initAddr.toString(16)}...`);
     this.c64.cpu.execute(2000000, 0xFFFF);
+    if (this.c64.cpu.pc !== 0xFFFF) {
+      throw new Error('SID init did not return within the execution budget');
+    }
     SystemLogger.log('Player', 'Init Complete. Starting Playback...');
 
     const frames: SidDumpFrame[] = [];
@@ -51,14 +54,14 @@ export class SidPlayer {
     const cyclesPerFrame = Math.floor(header.clockFreq / refreshRate);
     const totalFrames = Math.floor(durationSecs * refreshRate);
 
-    let isPsidStyle = true;
+    let isPsidStyle = header.magic === 'PSID' && header.playAddress !== 0;
     const irqVec = this.c64.ram[0xFFFE] | (this.c64.ram[0xFFFF] << 8);
-    if (irqVec !== 0xFF48) {
+    if (!isPsidStyle || irqVec !== 0xFF48) {
         isPsidStyle = false;
         SystemLogger.log('Player', 'Detected RSID/IRQ driver mode', 'info');
     }
 
-    let playAddr = header.playAddress;
+    const playAddr = header.playAddress;
     let silenceFrameCount = 0;
     const silenceThresholdFrames = 3 * refreshRate; // 3 seconds of silence to stop
 
@@ -66,7 +69,7 @@ export class SidPlayer {
         const startCycles = this.c64.cpu.cycles;
         let frameCycles = 0;
 
-        if (isPsidStyle && playAddr !== 0) {
+        if (isPsidStyle) {
             this.c64.cpu.sp = 0xFD;
             this.c64.ram[0x01FF] = 0xFF;
             this.c64.ram[0x01FE] = 0xFE;
@@ -76,10 +79,11 @@ export class SidPlayer {
                 this.c64.step();
                 frameCycles = this.c64.cpu.cycles - startCycles;
             }
-            while (frameCycles < cyclesPerFrame) {
-                this.c64.step();
-                frameCycles = this.c64.cpu.cycles - startCycles;
+            if (this.c64.cpu.pc !== 0xFFFF) {
+                throw new Error(`SID play routine exceeded its ${cyclesPerFrame}-cycle frame budget`);
             }
+            this.c64.advancePeripherals(cyclesPerFrame - frameCycles, false);
+            frameCycles = cyclesPerFrame;
         }
         else {
             while (frameCycles < cyclesPerFrame) {

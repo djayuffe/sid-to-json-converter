@@ -379,8 +379,7 @@ export class Cpu6502 {
         break;
 
       default:
-        // SystemLogger.log('CPU', `Illegal Opcode: $${opcode.toString(16).toUpperCase()} at $${(this.pc-1).toString(16).toUpperCase()}`, 'warn');
-        break;
+        throw new Error(`Unsupported 6502 opcode $${opcode.toString(16).toUpperCase().padStart(2, '0')} at $${((this.pc - 1) & 0xFFFF).toString(16).toUpperCase().padStart(4, '0')}`);
     }
   }
 

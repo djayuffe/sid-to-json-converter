@@ -20,6 +20,7 @@ Requirements: Node.js 20+ and pnpm 10+.
 pnpm install
 pnpm run typecheck
 pnpm run build
+pnpm run verify
 pnpm run dev
 ```
 
@@ -38,13 +39,15 @@ pnpm run cli -- json-to-midi tune.json --quantize none -o tune.mid
 
 `sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `json-to-midi` accepts `--quantize`, `--octave-shift`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Run `pnpm run cli -- --help` for the complete reference.
 
+`pnpm run verify` creates an isolated synthetic PSID fixture and checks malformed-input rejection, deterministic SID-to-JSON output, PAL frame timing, and the complete MIDI chunk/end-marker structure.
+
 ## MIDI interpretation
 
 The MIDI export represents musical control data inferred from SID registers, not rendered SID audio. It maps frequency to notes/pitch bend, gate/envelope to note timing and velocity, pulse and filter values to controller data, and SID noise to General MIDI drum notes. Use the JSON export when you need the raw register capture for inspection or a different downstream mapping.
 
 ## Accuracy boundaries
 
-The included runtime is a pragmatic SID-player tracer, not a transistor-level 6581/8580 audio emulator. Complex loaders, illegal 6502 opcodes, ROM-dependent RSID programs, multi-SID files and cycle-perfect raster effects may require a full C64 emulator. The application rejects malformed headers rather than silently producing a partial capture.
+The included runtime is a pragmatic SID-player tracer, not a transistor-level 6581/8580 audio emulator. Complex loaders, ROM-dependent RSID programs, multi-SID files and cycle-perfect raster effects may require a full C64 emulator. Unsupported 6502 opcodes, non-returning init routines and over-budget PSID play calls fail explicitly rather than silently producing a partial capture.
 
 ## Project layout
 

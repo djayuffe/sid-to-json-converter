@@ -195,7 +195,7 @@ const App = () => {
             SID Converter Suite
           </h1>
           <p className="text-slate-400 max-w-lg mx-auto">
-            Cycle-accurate C64/MOS6502 emulation for precise MIDI conversion.
+            Cycle-stepped C64/SID register tracing for JSON and MIDI conversion.
           </p>
         </header>
 
