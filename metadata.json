@@ -1,5 +1,5 @@
 {
   "name": "SID to JSON Converter",
-  "description": "A high-fidelity C64 SID file parser and emulator that exports playback data to JSON. Features accurate 6502 CPU emulation and full register capture.",
+  "description": "Offline PSID/RSID register tracing with JSON analysis and Standard MIDI export. Runs locally in the browser with a compact 6510/C64 runtime.",
   "requestFramePermissions": []
 }
