@@ -82,3 +82,7 @@ pnpm run build
 ```
 
 `verify` generates temporary synthetic PSID and RSID fixtures. It checks deterministic captures, PAL timing, direct play and CIA IRQ paths, rejected malformed input, and the structure of the generated MIDI file.
+
+## Licensing the output
+
+The converter itself is GPL-3.0-or-later and copyrighted by Ulf Bertilsson. A JSON or MIDI file made with the converter may have separate copyright or licensing considerations because it can reflect the musical composition or SID program supplied as input. Verify that you have the rights needed to share a tune or its derived export.

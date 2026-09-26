@@ -116,3 +116,5 @@ The regression suite uses temporary synthetic PSID and RSID fixtures. It checks 
 Copyright (C) 2026 Ulf Bertilsson.
 
 This project is licensed under the GNU General Public License, version 3 or later (`GPL-3.0-or-later`). See [LICENSE](LICENSE) and [COPYRIGHT](COPYRIGHT).
+
+The repository includes the complete, unmodified GNU GPL version 3 text. The `-or-later` designation permits recipients to follow GPLv3 or any later version published by the Free Software Foundation.
