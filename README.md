@@ -110,3 +110,9 @@ pnpm run build
 ```
 
 The regression suite uses temporary synthetic PSID and RSID fixtures. It checks deterministic captures, PAL timing, PSID direct-play dispatch, CIA IRQ-driven RSID execution, malformed SID/JSON rejection, and generated MIDI chunk structure.
+
+## License and copyright
+
+Copyright (C) 2026 Ulf Bertilsson.
+
+This project is licensed under the GNU General Public License, version 3 or later (`GPL-3.0-or-later`). See [LICENSE](LICENSE) and [COPYRIGHT](COPYRIGHT).

@@ -1,5 +1,7 @@
 {
   "name": "SID to JSON Converter",
   "description": "Offline PSID/RSID register tracing with JSON analysis and Standard MIDI export. Runs locally in the browser with a compact 6510/C64 runtime.",
+  "license": "GPL-3.0-or-later",
+  "copyright": "Copyright (C) 2026 Ulf Bertilsson",
   "requestFramePermissions": []
 }

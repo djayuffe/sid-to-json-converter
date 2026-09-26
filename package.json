@@ -3,6 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "description": "Offline PSID/RSID register tracing with JSON analysis and Standard MIDI export.",
+  "license": "GPL-3.0-or-later",
+  "author": "Ulf Bertilsson",
   "keywords": [
     "commodore-64",
     "c64",
