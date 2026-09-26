@@ -5,6 +5,18 @@
   "description": "Offline PSID/RSID register tracing with JSON analysis and Standard MIDI export.",
   "license": "GPL-3.0-or-later",
   "author": "Ulf Bertilsson",
+  "homepage": "https://github.com/djayuffe/sid-to-json-converter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/djayuffe/sid-to-json-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/djayuffe/sid-to-json-converter/issues"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
   "keywords": [
     "commodore-64",
     "c64",

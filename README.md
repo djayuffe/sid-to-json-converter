@@ -1,6 +1,10 @@
 # SID to JSON Converter
 
-A browser-based Commodore 64 SID analysis tool. It loads PSID/RSID files, executes their player code with a compact 6502/C64 runtime, records SID register and voice state frame-by-frame, exports the capture as JSON, and can turn a compatible JSON capture into Standard MIDI File type 1.
+An offline Commodore 64 SID analysis tool with a browser UI and command-line interface. It loads PSID/RSID files, executes supported player code with a compact 6510/C64 runtime, records SID register and voice state frame-by-frame, exports the capture as JSON, and can turn a compatible JSON capture into Standard MIDI File type 1.
+
+**Release:** v1.0.0 · **License:** GPL-3.0-or-later · **Copyright:** © 2026 Ulf Bertilsson
+
+> The browser workflow runs locally. It does not upload SID or JSON files, and it does not require an API key or network connection after dependencies are installed.
 
 ## Features
 
@@ -13,6 +17,14 @@ A browser-based Commodore 64 SID analysis tool. It loads PSID/RSID files, execut
 - Defensive JSON validation at every conversion boundary: frame ordering, register ranges, voice/filter values and capture duration must be internally consistent.
 - Smart quantization evaluates straight and triplet grids, while preserving unquantized timing when there is no confident match.
 - Fully bundled React/Vite/Tailwind build: no CDN, import map or API key is required at runtime.
+
+## Supported inputs
+
+- **SID files:** PSID and RSID versions 1–4 with a valid header, load address, subtune range, and C64-memory-sized program image.
+- **JSON files:** captures produced by this converter, or compatible traces that satisfy the documented frame, register, voice, filter, and timing validation rules.
+- **MIDI output:** Standard MIDI File type 1, suitable for DAWs and sequencers that accept `.mid` files.
+
+The project intentionally does not claim support for multi-SID tunes, ROM-dependent loaders, digi/sample playback, or cycle-perfect raster behavior. See [Accuracy boundaries](#accuracy-boundaries) before relying on a conversion for archival or emulation research.
 
 ## Installation and local development
 
@@ -27,6 +39,12 @@ pnpm run dev
 ```
 
 The browser build is entirely local: SID/JSON data is not uploaded and no API key is required. `pnpm run build` produces the browser bundle in `dist/` and the standalone CLI bundle in `dist-cli/`; both directories are generated and intentionally excluded from Git.
+
+To use the CLI without the browser after building it:
+
+```sh
+node dist-cli/sid-json.mjs --help
+```
 
 ### Browser quick start
 
@@ -74,6 +92,10 @@ See [the detailed usage guide](docs/USAGE.md) for copy-ready commands, output co
 - **Validation** is built into the browser and available through `sid-json validate-json`; use it before converting archived or third-party traces.
 
 Generated files are never committed by default. Keep captures under a local `exports/` directory or another project-specific location.
+
+## Release status
+
+The current public release is [v1.0.0](https://github.com/djayuffe/sid-to-json-converter/releases/tag/v1.0.0). It is validated with TypeScript type checks, deterministic synthetic PSID/RSID captures, JSON validation, MIDI chunk checks, and a production Vite build. Report reproducible issues through the [issue tracker](https://github.com/djayuffe/sid-to-json-converter/issues), including the SID header from `sid-json inspect` and the exact command or browser setting used.
 
 ## MIDI interpretation
 
