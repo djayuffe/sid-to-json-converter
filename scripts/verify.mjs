@@ -18,15 +18,16 @@ function makeFixture() {
   header.writeUInt16BE(0x7C, 6);
   header.writeUInt16BE(0x1000, 8);
   header.writeUInt16BE(0x1000, 10);
-  header.writeUInt16BE(0x1001, 12);
+  header.writeUInt16BE(0x100B, 12);
   header.writeUInt16BE(1, 14);
   header.writeUInt16BE(1, 16);
   writeText(header, 0x16, 'CLI Smoke');
   writeText(header, 0x36, 'SID to JSON');
   writeText(header, 0x56, '2026');
   header.writeUInt16BE(0x24, 0x76); // PAL + MOS8580 preference
-  // $1000 init: RTS. $1001 play: set voice 1 frequency/gate then RTS.
-  const program = Buffer.from([0x60, 0xA9, 0x11, 0x8D, 0x00, 0xD4, 0xA9, 0x02, 0x8D, 0x01, 0xD4, 0xA9, 0x41, 0x8D, 0x04, 0xD4, 0x60]);
+  // $1000 init installs a custom IRQ vector then returns. $100B play sets voice 1 frequency/gate then returns.
+  // A PSID with a nonzero play address must remain direct-call driven despite that custom vector.
+  const program = Buffer.from([0xA9, 0x00, 0x8D, 0xFE, 0xFF, 0xA9, 0x20, 0x8D, 0xFF, 0xFF, 0x60, 0xA9, 0x11, 0x8D, 0x00, 0xD4, 0xA9, 0x02, 0x8D, 0x01, 0xD4, 0xA9, 0x41, 0x8D, 0x04, 0xD4, 0x60]);
   return Buffer.concat([header, program]);
 }
 

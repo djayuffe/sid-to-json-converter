@@ -54,13 +54,17 @@ class Cia6526 {
     if (this.cra & 0x01) { // Start bit
       let underflow = false;
       this.timerA -= cycles;
-      if (this.timerA <= 0) {
+      while (this.timerA <= 0) {
         underflow = true;
-        this.timerA += this.latchA; // Reload
+        if (this.cra & 0x08) {
+          this.timerA = 0;
+          this.cra &= ~0x01;
+          break;
+        }
+        this.timerA += this.latchA || 0x10000; // CIA zero latch means 65536 cycles
       }
 
       if (underflow) {
-        if (this.cra & 0x08) this.cra &= ~0x01; // One-shot
         if (this.icrMask & 0x01) { // Interrupt enabled
           this.icr |= 0x01;
           this.irqPending = true;
@@ -74,12 +78,16 @@ class Cia6526 {
     if (this.crb & 0x01) {
        let underflow = false;
        this.timerB -= cycles;
-       if (this.timerB <= 0) {
+       while (this.timerB <= 0) {
          underflow = true;
-         this.timerB += this.latchB;
+         if (this.crb & 0x08) {
+           this.timerB = 0;
+           this.crb &= ~0x01;
+           break;
+         }
+         this.timerB += this.latchB || 0x10000;
        }
        if (underflow) {
-         if (this.crb & 0x08) this.crb &= ~0x01;
          if (this.icrMask & 0x02) {
            this.icr |= 0x02;
            this.irqPending = true;

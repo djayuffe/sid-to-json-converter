@@ -26,7 +26,7 @@ const App = () => {
 
   // MIDI Options
   const [midiOpts, setMidiOpts] = useState<MidiConversionOptions>({
-      quantize: 'none',
+      quantize: 'auto',
       useExpression: true,
       fullAutomation: true,
       mergeGaps: true,

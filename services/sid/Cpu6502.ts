@@ -121,6 +121,7 @@ export class Cpu6502 {
 
       this.cycles += 2; // Fetch
       this.stepOp(opcode);
+      this.pc &= 0xffff;
     }
     return this.cycles - startCycles;
   }

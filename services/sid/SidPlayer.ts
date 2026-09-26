@@ -54,10 +54,8 @@ export class SidPlayer {
     const cyclesPerFrame = Math.floor(header.clockFreq / refreshRate);
     const totalFrames = Math.floor(durationSecs * refreshRate);
 
-    let isPsidStyle = header.magic === 'PSID' && header.playAddress !== 0;
-    const irqVec = this.c64.ram[0xFFFE] | (this.c64.ram[0xFFFF] << 8);
-    if (!isPsidStyle || irqVec !== 0xFF48) {
-        isPsidStyle = false;
+    const isPsidStyle = header.magic === 'PSID' && header.playAddress !== 0;
+    if (!isPsidStyle) {
         SystemLogger.log('Player', 'Detected RSID/IRQ driver mode', 'info');
     }
 
