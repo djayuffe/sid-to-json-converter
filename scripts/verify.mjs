@@ -31,6 +31,31 @@ function makeFixture() {
   return Buffer.concat([header, program]);
 }
 
+function makeRsidFixture() {
+  const header = Buffer.alloc(0x7C);
+  header.write('RSID', 0, 'ascii');
+  header.writeUInt16BE(2, 4);
+  header.writeUInt16BE(0x7C, 6);
+  header.writeUInt16BE(0x1000, 8);
+  header.writeUInt16BE(0x1000, 10);
+  header.writeUInt16BE(0, 12); // IRQ-driven RSID has no direct play routine.
+  header.writeUInt16BE(1, 14);
+  header.writeUInt16BE(1, 16);
+  header.writeUInt16BE(0x14, 0x76); // PAL
+  // INIT installs a CIA1 Timer-A handler at $101F. The handler clears CIA1,
+  // writes a gated SID voice, then RTI. This exercises the KERNAL $0314
+  // indirection, CIA ICR mask/latch behavior, IRQ delivery, and RTI path.
+  const init = Buffer.from([
+    0xA9, 0x1F, 0x8D, 0x14, 0x03, 0xA9, 0x10, 0x8D, 0x15, 0x03,
+    0xA9, 0x20, 0x8D, 0x04, 0xDC, 0xA9, 0x00, 0x8D, 0x05, 0xDC,
+    0xA9, 0x81, 0x8D, 0x0D, 0xDC, 0xA9, 0x11, 0x8D, 0x0E, 0xDC,
+    0x60,
+    0xAD, 0x0D, 0xDC, 0xA9, 0x34, 0x8D, 0x00, 0xD4,
+    0xA9, 0x03, 0x8D, 0x01, 0xD4, 0xA9, 0x41, 0x8D, 0x04, 0xD4, 0x40,
+  ]);
+  return Buffer.concat([header, init]);
+}
+
 function run(...args) {
   const result = spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -63,6 +88,8 @@ try {
   const firstJson = join(folder, 'first.json');
   const secondJson = join(folder, 'second.json');
   const midi = join(folder, 'fixture.mid');
+  const rsid = join(folder, 'irq-driver.rsid');
+  const rsidJson = join(folder, 'irq-driver.json');
   await writeFile(sid, makeFixture());
   run('sid-to-json', sid, '--seconds', '1', '-o', firstJson);
   run('sid-to-json', sid, '--seconds', '1', '-o', secondJson);
@@ -71,6 +98,13 @@ try {
   assert.equal(dump.frames.length, 50);
   assert.ok(dump.frames.every((frame) => frame.cycles === 19704));
   assert.ok(dump.frames.every((frame) => frame.registers.length === 25));
+
+  await writeFile(rsid, makeRsidFixture());
+  run('sid-to-json', rsid, '--seconds', '1', '-o', rsidJson);
+  const rsidDump = JSON.parse(await readFile(rsidJson, 'utf8'));
+  assert.equal(rsidDump.frames.length, 50);
+  assert.ok(rsidDump.frames.some((frame) => frame.registers[4] === 0x41), 'CIA IRQ-driven RSID handler must update SID registers');
+
   run('json-to-midi', firstJson, '-o', midi);
   verifyMidi(await readFile(midi));
   await writeFile(join(folder, 'bad.sid'), Buffer.from('PSID'));
@@ -80,7 +114,7 @@ try {
   await writeFile(badJson, JSON.stringify(malformedDump));
   runFails('validate-json', badJson);
   runFails('json-to-midi', badJson, '-o', midi);
-  console.log('Verification OK: deterministic JSON, PAL timing, SID/JSON validation, and MIDI structure');
+  console.log('Verification OK: PSID/RSID timing, IRQ paths, SID/JSON validation, and MIDI structure');
 } finally {
   await rm(folder, { recursive: true, force: true });
 }

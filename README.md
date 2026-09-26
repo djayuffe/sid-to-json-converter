@@ -48,9 +48,11 @@ pnpm run cli -- sid-to-midi tune.sid --json-out tune.json --quantize auto -o tun
 
 The MIDI export represents musical control data inferred from SID registers, not rendered SID audio. It maps frequency to notes/pitch bend, gate/envelope to note timing and velocity, pulse and filter values to controller data, and SID noise to General MIDI drum notes. Use the JSON export when you need the raw register capture for inspection or a different downstream mapping.
 
+For the timing model, supported C64 runtime behavior, JSON fields, MIDI controller map, and practical export recipes, see [the emulation and format guide](docs/EMULATION_AND_FORMAT.md).
+
 ## Accuracy boundaries
 
-The included runtime is a pragmatic SID-player tracer, not a transistor-level 6581/8580 audio emulator. Complex loaders, ROM-dependent RSID programs, multi-SID files and cycle-perfect raster effects may require a full C64 emulator. Unsupported 6502 opcodes, non-returning init routines and over-budget PSID play calls fail explicitly rather than silently producing a partial capture.
+The included runtime is a pragmatic SID-player tracer, not a transistor-level 6581/8580 audio emulator. It supports RAM banking, a minimal vector/IRQ boot environment, CIA timer IRQs, VIC raster IRQs and standard IRQ indirection for conventional player drivers. Complex loaders, ROM-dependent RSID programs, multi-SID files and cycle-perfect raster effects may require a full C64 emulator. Unsupported 6502 opcodes, non-returning init routines and over-budget PSID play calls fail explicitly rather than silently producing a partial capture.
 
 ## Project layout
 

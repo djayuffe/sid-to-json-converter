@@ -48,7 +48,7 @@ class Cia6526 {
 
   // Count down timers
   public step(cycles: number): boolean {
-    let irqTriggered = false;
+    const pendingBefore = this.irqPending;
 
     // Timer A
     if (this.cra & 0x01) { // Start bit
@@ -65,12 +65,7 @@ class Cia6526 {
       }
 
       if (underflow) {
-        if (this.icrMask & 0x01) { // Interrupt enabled
-          this.icr |= 0x01;
-          this.irqPending = true;
-          irqTriggered = true;
-          // SystemLogger.log(this.name, 'Timer A Underflow -> IRQ', 'debug'); // Disabled
-        }
+        this.icr |= 0x01;
       }
     }
 
@@ -88,17 +83,15 @@ class Cia6526 {
          this.timerB += this.latchB || 0x10000;
        }
        if (underflow) {
-         if (this.icrMask & 0x02) {
-           this.icr |= 0x02;
-           this.irqPending = true;
-           irqTriggered = true;
-           // SystemLogger.log(this.name, 'Timer B Underflow -> IRQ', 'debug'); // Disabled
-         }
+         this.icr |= 0x02;
        }
     }
 
-    return irqTriggered;
+    this.irqPending = (this.icr & this.icrMask) !== 0;
+    return !pendingBefore && this.irqPending;
   }
+
+  public isIrqPending(): boolean { return this.irqPending; }
 
   public read(reg: number): number {
     switch(reg & 0x0F) {
@@ -143,13 +136,14 @@ class Cia6526 {
         } else { // Clear bits
           this.icrMask &= ~(val & 0x7F);
         }
+        this.irqPending = (this.icr & this.icrMask) !== 0;
         break;
       case 0x0E:
-        this.cra = val;
+        this.cra = val & ~0x10; // Force-load is a strobe, not a persistent control bit.
         if (val & 0x10) this.timerA = this.latchA; // Force load
         break;
       case 0x0F:
-        this.crb = val;
+        this.crb = val & ~0x10;
         if (val & 0x10) this.timerB = this.latchB;
         break;
     }
@@ -200,6 +194,8 @@ class VicII {
         return irq;
     }
 
+    public isIrqPending(): boolean { return (this.irqStatus & 0x80) !== 0; }
+
     public read(reg: number): number {
         switch(reg) {
             case 0x11: return (this.rasterLine & 0x100) >> 1; // Bit 7 is bit 8 of raster
@@ -240,6 +236,11 @@ export class C64System implements Bus {
   public cia2: Cia6526;
   public vic: VicII;
 
+  // This tracer has a deliberately minimal KERNAL image: it only supplies
+  // stable vectors and an IRQ/NMI return path. Program RAM remains visible
+  // whenever the 6510 port banks KERNAL out.
+  private kernalRom = new Uint8Array(0x2000).fill(0xFF);
+
   // PLA State ($01)
   private ddr = 0x2F; // $00 Data Direction
   private port = 0x37; // $01 Port
@@ -255,24 +256,34 @@ export class C64System implements Bus {
 
   public init(isNtsc: boolean, clockFreq: number) {
     this.ram.fill(0);
-    this.cpu.reset();
     this.sid = new SidChip(clockFreq);
     this.cia1.reset();
     this.cia2.reset();
     this.vic.reset(isNtsc);
 
     // Default PLA
-    this.ddr = 0;
+    this.ddr = 0x2F;
     this.port = 0x37;
 
-    // Install Default Vectors for stability (in case no ROMs)
+    // Install RAM vectors for code that banks KERNAL out.
     this.ram[0xFFFA] = 0x00; this.ram[0xFFFB] = 0xFE; // NMI
     this.ram[0xFFFC] = 0x00; this.ram[0xFFFD] = 0xE0; // RESET
     this.ram[0xFFFE] = 0x48; this.ram[0xFFFF] = 0xFF; // IRQ
 
-    // Install a dummy IRQ handler at $FF48 that acknowledges CIA/VIC
-    const dummyIrq = [0x48, 0x8A, 0x48, 0x98, 0x48, 0xAD, 0x19, 0xD0, 0x8D, 0x19, 0xD0, 0x68, 0xA8, 0x68, 0xAA, 0x68, 0x40];
-    for(let i=0; i<dummyIrq.length; i++) this.ram[0xFF48 + i] = dummyIrq[i];
+    this.kernalRom.fill(0xFF);
+    // The ROM IRQ vector follows the normal KERNAL indirection at $0314 so
+    // IRQ-driven players can install their handler without replacing $FFFE.
+    // The default target acknowledges CIA1, CIA2 and VIC before returning.
+    const dummyIrq = [0x48, 0x8A, 0x48, 0x98, 0x48, 0xAD, 0x0D, 0xDC, 0xAD, 0x0D, 0xDD, 0xAD, 0x19, 0xD0, 0x8D, 0x19, 0xD0, 0x68, 0xA8, 0x68, 0xAA, 0x68, 0x40];
+    this.kernalRom.set([0x4C, 0x00, 0xE0], 0x0000); // idle boot loop
+    this.kernalRom.set([0x6C, 0x14, 0x03], 0x1F48); // JMP ($0314)
+    this.kernalRom.set(dummyIrq, 0x1F4B);
+    this.kernalRom[0x1E00] = 0x40;
+    this.ram[0x0314] = 0x4B; this.ram[0x0315] = 0xFF;
+    this.kernalRom[0x1FFA] = 0x00; this.kernalRom[0x1FFB] = 0xFE;
+    this.kernalRom[0x1FFC] = 0x00; this.kernalRom[0x1FFD] = 0xE0;
+    this.kernalRom[0x1FFE] = 0x48; this.kernalRom[0x1FFF] = 0xFF;
+    this.cpu.reset();
 
     SystemLogger.clear();
     SystemLogger.log('System', 'C64 Power On Sequence Complete', 'info');
@@ -290,12 +301,15 @@ export class C64System implements Bus {
   /** Advance CIA, VIC and SID state while the CPU is intentionally idle. */
   public advancePeripherals(cycles: number, serviceCpuInterrupts: boolean = true) {
     if (!Number.isFinite(cycles) || cycles <= 0) return;
-    const c1Irq = this.cia1.step(cycles);
+    this.cia1.step(cycles);
     const c2Irq = this.cia2.step(cycles);
-    const vicIrq = this.vic.step(cycles);
+    this.vic.step(cycles);
 
     // 3. Trigger Interrupts
-    if (serviceCpuInterrupts && (c1Irq || vicIrq)) {
+    // IRQ is level-sensitive: retry it on later instruction boundaries when
+    // an earlier CLI changes the I flag. CIA2 is intentionally edge-driven
+    // here because it feeds the 6510's NMI input.
+    if (serviceCpuInterrupts && (this.cia1.isIrqPending() || this.vic.isIrqPending())) {
         this.cpu.irq();
     }
     if (serviceCpuInterrupts && c2Irq) {
@@ -328,9 +342,9 @@ export class C64System implements Bus {
             if (charen) {
                 // I/O Active
                 // VIC-II
-                if (addr >= 0xD000 && addr <= 0xD02E) return this.vic.read(addr & 0x3F);
+                if (addr >= 0xD000 && addr <= 0xD3FF) return this.vic.read(addr & 0x3F);
                 // SID
-                if (addr >= 0xD400 && addr <= 0xD7FF) return this.ram[addr]; // Shadow read
+                if (addr >= 0xD400 && addr <= 0xD7FF) return this.ram[0xD400 + (addr & 0x1F)]; // SID register mirrors
                 // CIA 1
                 if (addr >= 0xDC00 && addr <= 0xDCFF) return this.cia1.read(addr);
                 // CIA 2
@@ -348,7 +362,7 @@ export class C64System implements Bus {
     // KERNAL ROM ($E000-$FFFF)
     if (addr >= 0xE000 && addr <= 0xFFFF) {
         if (hiram) {
-             return 0xFF;
+             return this.kernalRom[addr - 0xE000];
         }
         return this.ram[addr]; // RAM
     }
@@ -372,12 +386,12 @@ export class C64System implements Bus {
     if (addr >= 0xD000 && addr <= 0xDFFF) {
          if ((hiram || loram) && charen) {
              // I/O Mapped
-            if (addr >= 0xD000 && addr <= 0xD02E) {
+            if (addr >= 0xD000 && addr <= 0xD3FF) {
                 this.vic.write(addr & 0x3F, val);
                 return;
             }
             if (addr >= 0xD400 && addr <= 0xD7FF) {
-                this.ram[addr] = val;
+                this.ram[0xD400 + (addr & 0x1F)] = val;
                 return;
             }
             if (addr >= 0xDC00 && addr <= 0xDCFF) {

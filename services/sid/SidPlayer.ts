@@ -57,6 +57,9 @@ export class SidPlayer {
     const isPsidStyle = header.magic === 'PSID' && header.playAddress !== 0;
     if (!isPsidStyle) {
         SystemLogger.log('Player', 'Detected RSID/IRQ driver mode', 'info');
+        // INIT has returned through the trap; execute the minimal KERNAL idle
+        // loop so CIA/VIC IRQ sources can drive an IRQ-based player.
+        this.c64.cpu.pc = 0xE000;
     }
 
     const playAddr = header.playAddress;
