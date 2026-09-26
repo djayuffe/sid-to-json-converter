@@ -35,9 +35,10 @@ pnpm run build:cli
 pnpm run cli -- inspect tune.sid
 pnpm run cli -- sid-to-json tune.sid --seconds 180 --song 1 -o tune.json
 pnpm run cli -- json-to-midi tune.json --quantize none -o tune.mid
+pnpm run cli -- sid-to-midi tune.sid --json-out tune.json --quantize auto -o tune.mid
 ```
 
-`sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `json-to-midi` accepts `--quantize`, `--octave-shift`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Run `pnpm run cli -- --help` for the complete reference.
+`sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `sid-to-midi` performs capture and MIDI export in one command, with optional `--json-out`. `json-to-midi` accepts `--quantize` (including `1/16T` and `1/8T` triplets), `--octave-shift`, `--min-note-frames`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Use `validate-json` before batch MIDI conversion. Run `pnpm run cli -- --help` for the complete reference.
 
 `pnpm run verify` creates an isolated synthetic PSID fixture and checks malformed-input rejection, deterministic SID-to-JSON output, PAL frame timing, and the complete MIDI chunk/end-marker structure.
 

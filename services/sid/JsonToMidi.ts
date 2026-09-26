@@ -7,7 +7,7 @@ const BPM = 120;
 const TICKS_PER_SEC = (BPM * TPQ) / 60; // 960
 
 export interface MidiConversionOptions {
-    quantize?: 'none' | 'auto' | '1/32' | '1/16' | '1/8' | '1/4';
+    quantize?: 'none' | 'auto' | '1/32' | '1/16' | '1/16T' | '1/8' | '1/8T' | '1/4';
     useExpression?: boolean;
     fullAutomation?: boolean;
     mergeGaps?: boolean;
@@ -190,7 +190,9 @@ export class JsonToMidiConverter {
 
     if (effectiveQuantize === '1/4') gridTicks = TPQ;
     else if (effectiveQuantize === '1/8') gridTicks = TPQ / 2;
+    else if (effectiveQuantize === '1/8T') gridTicks = TPQ / 3;
     else if (effectiveQuantize === '1/16') gridTicks = TPQ / 4;
+    else if (effectiveQuantize === '1/16T') gridTicks = TPQ / 6;
     else if (effectiveQuantize === '1/32') gridTicks = TPQ / 8;
 
     let effectiveShift = options.octaveShift !== undefined ? options.octaveShift : 0;

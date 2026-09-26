@@ -392,7 +392,7 @@ const App = () => {
                                 onChange={e => setMidiOpts({...midiOpts, quantize: e.target.value as any})}
                                 className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
                             >
-                                <option value="none">Auto (Smart)</option>
+                                <option value="auto">Auto (Smart)</option>
                                 <option value="1/32">1/32</option>
                                 <option value="1/16">1/16</option>
                                 <option value="1/16T">1/16 (Triplet)</option>
