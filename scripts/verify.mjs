@@ -98,6 +98,7 @@ try {
   assert.equal(dump.frames.length, 50);
   assert.ok(dump.frames.every((frame) => frame.cycles === 19704));
   assert.ok(dump.frames.every((frame) => frame.registers.length === 25));
+  assert.ok(dump.frames.some((frame) => frame.voices[0].triggered), 'gate rises during a frame must be retained in the snapshot');
 
   await writeFile(rsid, makeRsidFixture());
   run('sid-to-json', rsid, '--seconds', '1', '-o', rsidJson);

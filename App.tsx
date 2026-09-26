@@ -21,11 +21,14 @@ const App = () => {
   const [jsonFile, setJsonFile] = useState<File | null>(null);
   const [midiBlob, setMidiBlob] = useState<Blob | null>(null);
   const [loadingMidi, setLoadingMidi] = useState(false);
+  const [midiError, setMidiError] = useState<string | null>(null);
   const [showRegisters, setShowRegisters] = useState(false);
 
   // Debug State
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const sidJobRef = useRef(0);
+  const midiJobRef = useRef(0);
 
   // MIDI Options
   const [midiOpts, setMidiOpts] = useState<MidiConversionOptions>({
@@ -83,15 +86,22 @@ const App = () => {
   // --- SID Processing ---
   const handleSidFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      sidJobRef.current += 1;
+      midiJobRef.current += 1;
       setSidFile(e.target.files[0]);
+      setJsonFile(null);
+      setLoadingSid(false);
+      setLoadingMidi(false);
       setSidError(null);
       setSidResult(null);
       setMidiBlob(null);
+      setMidiError(null);
     }
   };
 
   const processSid = async () => {
     if (!sidFile) return;
+    const job = ++sidJobRef.current;
 
     setLoadingSid(true);
     setSidError(null);
@@ -102,8 +112,10 @@ const App = () => {
 
     try {
       const buffer = await sidFile.arrayBuffer();
+      if (job !== sidJobRef.current) return;
       // Use setTimeout to allow UI to render the "Emulating..." state before blocking
       setTimeout(() => {
+        if (job !== sidJobRef.current) return;
         try {
           const player = new SidPlayer();
           const dump = player.convertToJSON(buffer, duration, subtune);
@@ -113,12 +125,14 @@ const App = () => {
           setSidError(message);
           SystemLogger.log('App', message, 'error');
         } finally {
-          setLoadingSid(false);
+          if (job === sidJobRef.current) setLoadingSid(false);
         }
       }, 100);
-    } catch (err) {
-      setSidError("Failed to read file");
-      setLoadingSid(false);
+    } catch (err: unknown) {
+      if (job === sidJobRef.current) {
+        setSidError(errorMessage(err, 'Failed to read SID file'));
+        setLoadingSid(false);
+      }
     }
   };
 
@@ -138,40 +152,57 @@ const App = () => {
   // --- MIDI Processing ---
   const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      sidJobRef.current += 1;
+      midiJobRef.current += 1;
       setJsonFile(e.target.files[0]);
+      setSidFile(null);
+      setLoadingSid(false);
+      setLoadingMidi(false);
       setMidiBlob(null);
+      setMidiError(null);
       setSidResult(null);
     }
   };
 
   const generateMidiFromDump = (dump: SidDump) => {
+    const job = ++midiJobRef.current;
     setLoadingMidi(true);
+    setMidiError(null);
     // Use setTimeout to unblock UI
     setTimeout(() => {
+        if (job !== midiJobRef.current) return;
         try {
             const converter = new JsonToMidiConverter();
             const midiBytes = converter.convert(dump, midiOpts);
             const blob = new Blob([midiBytes], { type: 'audio/midi' });
-            setMidiBlob(blob);
+            if (job === midiJobRef.current) setMidiBlob(blob);
         } catch (err: unknown) {
             const message = errorMessage(err, 'MIDI generation failed');
             SystemLogger.log('App', message, 'error');
+            if (job === midiJobRef.current) setMidiError(message);
         } finally {
-            setLoadingMidi(false);
+            if (job === midiJobRef.current) setLoadingMidi(false);
         }
     }, 50);
   };
 
   const processJsonToMidiFile = async () => {
     if (!jsonFile) return;
+    const job = ++midiJobRef.current;
     setLoadingMidi(true);
+    setMidiError(null);
     try {
         const text = await jsonFile.text();
+        if (job !== midiJobRef.current) return;
         const dump: SidDump = JSON.parse(text);
         generateMidiFromDump(dump);
     } catch (err: unknown) {
-        alert(`Failed to convert JSON file: ${errorMessage(err, 'invalid or incompatible JSON')}`);
-        setLoadingMidi(false);
+        if (job === midiJobRef.current) {
+          const message = errorMessage(err, 'Invalid or incompatible JSON');
+          setMidiError(message);
+          SystemLogger.log('App', message, 'error');
+          setLoadingMidi(false);
+        }
     }
   };
 
@@ -239,6 +270,9 @@ const App = () => {
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 60))}
+                    min="1"
+                    max="3600"
+                    step="1"
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none"
                   />
                 </div>
@@ -248,6 +282,8 @@ const App = () => {
                     type="number"
                     value={subtune}
                     onChange={(e) => setSubtune(Math.max(1, parseInt(e.target.value) || 1))}
+                    min="1"
+                    step="1"
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none"
                   />
                 </div>
@@ -396,6 +432,7 @@ const App = () => {
                                 onChange={e => setMidiOpts({...midiOpts, quantize: e.target.value as MidiConversionOptions['quantize']})}
                                 className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
                             >
+                                <option value="none">None (Frame Timing)</option>
                                 <option value="auto">Auto (Smart)</option>
                                 <option value="1/32">1/32</option>
                                 <option value="1/16">1/16</option>
@@ -495,6 +532,12 @@ const App = () => {
                 </div>
 
                 <div className="flex-1 w-full flex flex-col gap-4">
+                     {midiError && (
+                        <div role="alert" className="bg-red-900/20 border border-red-500/50 rounded p-3 flex items-start gap-2 text-sm text-red-300">
+                          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                          {midiError}
+                        </div>
+                     )}
                      {!midiBlob ? (
                          <button
                             onClick={jsonFile ? processJsonToMidiFile : () => sidResult && generateMidiFromDump(sidResult)}

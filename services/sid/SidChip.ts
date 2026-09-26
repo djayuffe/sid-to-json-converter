@@ -90,7 +90,11 @@ export class SidChip {
       v.pulse = ((pHi & 0x0F) << 8) | pLo;
 
       const newGate = (ctrl & 0x01) !== 0;
-      v.triggered = newGate && !v.gate;
+      // Capture gate rising edges for the entire video-frame interval. The SID
+      // state is updated after each CPU instruction, but JSON/MIDI consumes a
+      // single frame snapshot; assigning this directly would lose a retrigger
+      // as soon as the following instruction ran.
+      if (newGate && !v.gate) v.triggered = true;
 
       // Gate State Logic
       // If Gate goes high, we transition to Attack (unless Test bit is set, which resets envelope)
@@ -245,6 +249,9 @@ export class SidChip {
            state: v.envState
        };
     }) as [SidVoiceStatus, SidVoiceStatus, SidVoiceStatus];
+
+    // `triggered` is an edge latch, consumed exactly once per capture frame.
+    this.voices.forEach((voice) => { voice.triggered = false; });
 
     let mode = 0;
     if (this.filterModeLp) mode |= 1;
