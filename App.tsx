@@ -43,6 +43,13 @@ const App = () => {
       convertArpsToChords: false
   });
 
+  const updateMidiOptions = (changes: Partial<MidiConversionOptions>) => {
+    midiJobRef.current += 1;
+    setMidiBlob(null);
+    setMidiError(null);
+    setMidiOpts((current) => ({ ...current, ...changes }));
+  };
+
   // Subscribe to Logger with buffering to prevent render thrashing
   useEffect(() => {
     let buffer: LogEntry[] = [];
@@ -223,7 +230,7 @@ const App = () => {
   const toHex = (n: number) => n.toString(16).toUpperCase().padStart(2, '0');
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-8">
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="text-center">
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-4">
@@ -244,12 +251,13 @@ const App = () => {
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="sidUpload" className="block text-sm font-medium text-slate-300 mb-2">
                   Select SID File
                 </label>
                 <div className="relative group">
                   <input
                     type="file"
+                    id="sidUpload"
                     accept=".sid"
                     onChange={handleSidFileChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -265,32 +273,34 @@ const App = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Max Duration (s)</label>
+                  <label htmlFor="duration" className="block text-xs font-medium text-slate-400 mb-1">Max Duration (s)</label>
                   <input
+                    id="duration"
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 60))}
                     min="1"
                     max="3600"
                     step="1"
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none"
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Subtune</label>
+                  <label htmlFor="subtune" className="block text-xs font-medium text-slate-400 mb-1">Subtune</label>
                   <input
+                    id="subtune"
                     type="number"
                     value={subtune}
                     onChange={(e) => setSubtune(Math.max(1, parseInt(e.target.value) || 1))}
                     min="1"
                     step="1"
-                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none"
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
                   />
                 </div>
               </div>
 
               {sidError && (
-                  <div className="bg-red-900/20 border border-red-500/50 rounded p-3 flex items-start gap-2 text-sm text-red-300">
+                  <div role="alert" className="bg-red-900/20 border border-red-500/50 rounded p-3 flex items-start gap-2 text-sm text-red-300">
                       <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                       {sidError}
                   </div>
@@ -426,11 +436,12 @@ const App = () => {
                 <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 text-sm w-full md:w-auto">
                     <div className="grid grid-cols-2 md:flex flex-wrap gap-4">
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-slate-400">Quantization</label>
+                            <label htmlFor="quantize" className="text-xs text-slate-400">Quantization</label>
                             <select
+                                id="quantize"
                                 value={midiOpts.quantize}
-                                onChange={e => setMidiOpts({...midiOpts, quantize: e.target.value as MidiConversionOptions['quantize']})}
-                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
+                                onChange={e => updateMidiOptions({ quantize: e.target.value as MidiConversionOptions['quantize'] })}
+                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
                             >
                                 <option value="none">None (Frame Timing)</option>
                                 <option value="auto">Auto (Smart)</option>
@@ -443,23 +454,25 @@ const App = () => {
                             </select>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-slate-400">Octave Shift</label>
+                            <label htmlFor="octaveShift" className="text-xs text-slate-400">Octave Shift</label>
                             <select
+                                id="octaveShift"
                                 value={midiOpts.octaveShift}
-                                onChange={e => setMidiOpts({...midiOpts, octaveShift: parseInt(e.target.value)})}
-                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
+                                onChange={e => updateMidiOptions({ octaveShift: parseInt(e.target.value) })}
+                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
                             >
-                                <option value="0">Auto</option>
+                                <option value="0">No shift</option>
                                 <option value="-1">-1</option>
                                 <option value="1">+1</option>
                             </select>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-slate-400">Note Duration</label>
+                            <label htmlFor="noteDuration" className="text-xs text-slate-400">Note Duration</label>
                             <select
+                                id="noteDuration"
                                 value={midiOpts.noteDuration}
-                                onChange={e => setMidiOpts({...midiOpts, noteDuration: e.target.value as MidiConversionOptions['noteDuration']})}
-                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
+                                onChange={e => updateMidiOptions({ noteDuration: e.target.value as MidiConversionOptions['noteDuration'] })}
+                                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
                             >
                                 <option value="smart">Smart Detect</option>
                                 <option value="audible">Audible (Tail)</option>
@@ -471,7 +484,7 @@ const App = () => {
                                 <input
                                     type="checkbox"
                                     checked={midiOpts.detectDrums}
-                                    onChange={e => setMidiOpts({...midiOpts, detectDrums: e.target.checked})}
+                                    onChange={e => updateMidiOptions({ detectDrums: e.target.checked })}
                                     className="rounded border-slate-600 bg-slate-800 text-purple-500"
                                 />
                                 <label className="text-xs text-slate-300">Detect Drums</label>
@@ -480,7 +493,7 @@ const App = () => {
                                 <input
                                     type="checkbox"
                                     checked={midiOpts.convertArpsToChords}
-                                    onChange={e => setMidiOpts({...midiOpts, convertArpsToChords: e.target.checked})}
+                                    onChange={e => updateMidiOptions({ convertArpsToChords: e.target.checked })}
                                     className="rounded border-slate-600 bg-slate-800 text-purple-500"
                                 />
                                 <label className="text-xs text-slate-300">Convert Arps</label>
@@ -533,7 +546,7 @@ const App = () => {
 
                 <div className="flex-1 w-full flex flex-col gap-4">
                      {midiError && (
-                        <div role="alert" className="bg-red-900/20 border border-red-500/50 rounded p-3 flex items-start gap-2 text-sm text-red-300">
+                        <div role="alert" aria-live="assertive" className="bg-red-900/20 border border-red-500/50 rounded p-3 flex items-start gap-2 text-sm text-red-300">
                           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                           {midiError}
                         </div>
