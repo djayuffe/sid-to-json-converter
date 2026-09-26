@@ -14,7 +14,7 @@ A browser-based Commodore 64 SID analysis tool. It loads PSID/RSID files, execut
 - Smart quantization evaluates straight and triplet grids, while preserving unquantized timing when there is no confident match.
 - Fully bundled React/Vite/Tailwind build: no CDN, import map or API key is required at runtime.
 
-## Run locally
+## Installation and local development
 
 Requirements: Node.js 20+ and pnpm 10+.
 
@@ -25,6 +25,8 @@ pnpm run build
 pnpm run verify
 pnpm run dev
 ```
+
+The browser build is entirely local: SID/JSON data is not uploaded and no API key is required. `pnpm run build` produces the browser bundle in `dist/` and the standalone CLI bundle in `dist-cli/`; both directories are generated and intentionally excluded from Git.
 
 ### Browser quick start
 
@@ -65,6 +67,14 @@ pnpm run cli -- sid-to-midi tune.sid --json-out tune.json --quantize auto -o tun
 
 See [the detailed usage guide](docs/USAGE.md) for copy-ready commands, output conventions, option recipes, and troubleshooting.
 
+## Outputs and compatibility
+
+- **JSON** is the durable analysis format. It includes parsed SID metadata and primary register/voice/filter snapshots at video-frame boundaries.
+- **MIDI** is a type-1 Standard MIDI File designed for import into mainstream DAWs. It conveys inferred notes and controller automation, not SID audio.
+- **Validation** is built into the browser and available through `sid-json validate-json`; use it before converting archived or third-party traces.
+
+Generated files are never committed by default. Keep captures under a local `exports/` directory or another project-specific location.
+
 ## MIDI interpretation
 
 The MIDI export represents musical control data inferred from SID registers, not rendered SID audio. It maps frequency to notes/pitch bend, gate/envelope to note timing and velocity, pulse and filter values to controller data, and SID noise to General MIDI drum notes. Use the JSON export when you need the raw register capture for inspection or a different downstream mapping.
@@ -85,4 +95,18 @@ services/sid/C64System.ts   CPU bus, CIA and VIC timing model
 services/sid/SidChip.ts     SID register/envelope snapshot model
 services/sid/JsonToMidi.ts  JSON-to-Standard-MIDI writer
 services/sid/SidTypes.ts    stable JSON capture types
+docs/USAGE.md               CLI recipes and troubleshooting
+docs/EMULATION_AND_FORMAT.md runtime, JSON and MIDI reference
 ```
+
+## Verification
+
+Before submitting a change, run:
+
+```sh
+pnpm run typecheck
+pnpm run verify
+pnpm run build
+```
+
+The regression suite uses temporary synthetic PSID and RSID fixtures. It checks deterministic captures, PAL timing, PSID direct-play dispatch, CIA IRQ-driven RSID execution, malformed SID/JSON rejection, and generated MIDI chunk structure.

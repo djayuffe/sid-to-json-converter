@@ -5,6 +5,9 @@ import { SidDump } from './services/sid/SidTypes';
 import { JsonToMidiConverter, MidiConversionOptions } from './services/sid/JsonToMidi';
 import { SystemLogger, LogEntry } from './services/Logger';
 
+const fileStem = (name: string, extension: string) => name.toLowerCase().endsWith(extension) ? name.slice(0, -extension.length) : name;
+const errorMessage = (error: unknown, fallback: string) => error instanceof Error && error.message ? error.message : fallback;
+
 const App = () => {
   // SID -> JSON State
   const [sidFile, setSidFile] = useState<File | null>(null);
@@ -105,9 +108,10 @@ const App = () => {
           const player = new SidPlayer();
           const dump = player.convertToJSON(buffer, duration, subtune);
           setSidResult(dump);
-        } catch (err: any) {
-          setSidError(err.message || "Failed to process SID file");
-          SystemLogger.log('App', err.message, 'error');
+        } catch (err: unknown) {
+          const message = errorMessage(err, 'Failed to process SID file');
+          setSidError(message);
+          SystemLogger.log('App', message, 'error');
         } finally {
           setLoadingSid(false);
         }
@@ -124,7 +128,7 @@ const App = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${sidFile?.name.replace('.sid', '')}_dump.json`;
+      a.download = `${fileStem(sidFile?.name ?? 'sid-capture', '.sid')}_dump.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -149,9 +153,9 @@ const App = () => {
             const midiBytes = converter.convert(dump, midiOpts);
             const blob = new Blob([midiBytes], { type: 'audio/midi' });
             setMidiBlob(blob);
-        } catch (err) {
-            console.error("Failed to convert JSON:", err);
-            SystemLogger.log('App', 'MIDI Generation Failed', 'error');
+        } catch (err: unknown) {
+            const message = errorMessage(err, 'MIDI generation failed');
+            SystemLogger.log('App', message, 'error');
         } finally {
             setLoadingMidi(false);
         }
@@ -165,8 +169,8 @@ const App = () => {
         const text = await jsonFile.text();
         const dump: SidDump = JSON.parse(text);
         generateMidiFromDump(dump);
-    } catch (err) {
-        alert("Failed to convert JSON file: " + err);
+    } catch (err: unknown) {
+        alert(`Failed to convert JSON file: ${errorMessage(err, 'invalid or incompatible JSON')}`);
         setLoadingMidi(false);
     }
   };
@@ -176,7 +180,7 @@ const App = () => {
       const url = URL.createObjectURL(midiBlob);
       const a = document.createElement('a');
       a.href = url;
-      const fileName = sidFile ? sidFile.name.replace('.sid', '') : jsonFile ? jsonFile.name.replace('.json', '') : 'output';
+      const fileName = sidFile ? fileStem(sidFile.name, '.sid') : jsonFile ? fileStem(jsonFile.name, '.json') : 'output';
       a.download = `${fileName}.mid`;
       document.body.appendChild(a);
       a.click();
@@ -389,7 +393,7 @@ const App = () => {
                             <label className="text-xs text-slate-400">Quantization</label>
                             <select
                                 value={midiOpts.quantize}
-                                onChange={e => setMidiOpts({...midiOpts, quantize: e.target.value as any})}
+                                onChange={e => setMidiOpts({...midiOpts, quantize: e.target.value as MidiConversionOptions['quantize']})}
                                 className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
                             >
                                 <option value="auto">Auto (Smart)</option>
@@ -417,7 +421,7 @@ const App = () => {
                             <label className="text-xs text-slate-400">Note Duration</label>
                             <select
                                 value={midiOpts.noteDuration}
-                                onChange={e => setMidiOpts({...midiOpts, noteDuration: e.target.value as any})}
+                                onChange={e => setMidiOpts({...midiOpts, noteDuration: e.target.value as MidiConversionOptions['noteDuration']})}
                                 className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-white outline-none"
                             >
                                 <option value="smart">Smart Detect</option>

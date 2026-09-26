@@ -121,7 +121,7 @@ class AutomationTrack {
     private lastValues = new Map<number, number>();
     private channel: number;
 
-    constructor(channel: number, eventsArray: any[]) {
+    constructor(channel: number, eventsArray: MidiEvent[]) {
         this.channel = channel;
         this.events = eventsArray;
     }
@@ -183,7 +183,7 @@ export class JsonToMidiConverter {
 
     // --- Auto-Detection Logic ---
     let gridTicks = 1;
-    let effectiveQuantize = options.quantize || 'none';
+    let effectiveQuantize: NonNullable<MidiConversionOptions['quantize']> = options.quantize ?? 'none';
 
     if (effectiveQuantize === 'auto') {
         effectiveQuantize = this.detectBestQuantization(dump, fps);
@@ -209,7 +209,7 @@ export class JsonToMidiConverter {
         noteDuration: 'smart',
         convertArpsToChords: false,
         ...options,
-        quantize: effectiveQuantize as any
+        quantize: effectiveQuantize
     };
 
     const drumEvents: MidiEvent[] = [];
