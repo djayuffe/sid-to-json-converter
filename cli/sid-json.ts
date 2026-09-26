@@ -108,7 +108,7 @@ async function validateJson(input: string): Promise<void> {
 async function main(): Promise<void> {
   const [command, ...arguments_] = process.argv.slice(2);
   if (!command || command === '--help' || command === '-h' || command === 'help') { console.log(usage); return; }
-  if (command === '--version' || command === '-V') { console.log('sid-json 0.0.0'); return; }
+  if (command === '--version' || command === '-V') { console.log('sid-json 1.0.0'); return; }
   const { input, options } = parseOptions(arguments_);
   if (command === 'sid-to-json') return sidToJson(input, options);
   if (command === 'json-to-midi') return jsonToMidi(input, options);

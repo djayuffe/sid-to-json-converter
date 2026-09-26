@@ -26,7 +26,26 @@ pnpm run verify
 pnpm run dev
 ```
 
-Open the local URL printed by Vite, choose a `.sid` file, set the maximum capture duration and subtune, then run the SID-to-JSON conversion. A MIDI file is generated automatically from a successful capture; either JSON or MIDI can be downloaded from the interface.
+### Browser quick start
+
+1. Open the local URL printed by Vite.
+2. Drop a PSID or RSID file into **SID → JSON**.
+3. Set a capture limit (start with 60 seconds) and select the subtune, numbered from 1.
+4. Choose **Convert to JSON**. A successful capture also prepares a MIDI download using the selected MIDI settings.
+5. Download JSON for forensic/register analysis, or MIDI for a DAW sketch.
+
+For a JSON capture produced elsewhere, use the **JSON → MIDI** panel. The browser validates the file before conversion and reports incompatible captures instead of producing a broken MIDI file.
+
+### Choose a workflow
+
+| Goal | Recommended command or setting |
+| --- | --- |
+| Inspect header and supported subtunes | `sid-json inspect tune.sid` |
+| Preserve exact frame positions | `sid-json sid-to-json tune.sid --seconds 180` |
+| Create a musical first-pass MIDI | `sid-json sid-to-midi tune.sid --quantize auto --note-duration smart` |
+| Keep chip arpeggios as separate notes | Do not use `--arps-to-chords` |
+| Turn fast arpeggios into DAW chords | Add `--arps-to-chords` |
+| Treat noise as pitched material | Add `--no-drums` |
 
 ## Command-line interface
 
@@ -43,6 +62,8 @@ pnpm run cli -- sid-to-midi tune.sid --json-out tune.json --quantize auto -o tun
 `sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `sid-to-midi` performs capture and MIDI export in one command, with optional `--json-out`. `json-to-midi` accepts `--quantize` (including `1/16T` and `1/8T` triplets), `--octave-shift`, `--min-note-frames`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Use `validate-json` before batch MIDI conversion. Run `pnpm run cli -- --help` for the complete reference.
 
 `pnpm run verify` creates an isolated synthetic PSID fixture and checks malformed SID/JSON rejection, deterministic SID-to-JSON output, PAL frame timing, custom-IRQ PSID dispatch, and the complete MIDI chunk/end-marker structure.
+
+See [the detailed usage guide](docs/USAGE.md) for copy-ready commands, output conventions, option recipes, and troubleshooting.
 
 ## MIDI interpretation
 
