@@ -36,6 +36,11 @@ function run(...args) {
   assert.equal(result.status, 0, result.stderr || result.stdout);
 }
 
+function runFails(...args) {
+  const result = spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(result.status, 0, 'command should reject invalid input');
+}
+
 function verifyMidi(data) {
   assert.equal(data.subarray(0, 4).toString('ascii'), 'MThd');
   assert.equal(data.readUInt32BE(4), 6);
@@ -69,9 +74,13 @@ try {
   run('json-to-midi', firstJson, '-o', midi);
   verifyMidi(await readFile(midi));
   await writeFile(join(folder, 'bad.sid'), Buffer.from('PSID'));
-  const invalid = spawnSync(process.execPath, [cli, 'inspect', join(folder, 'bad.sid')], { cwd: root, encoding: 'utf8' });
-  assert.notEqual(invalid.status, 0, 'truncated SID input must fail');
-  console.log('Verification OK: deterministic JSON, PAL timing, SID validation, and MIDI structure');
+  runFails('inspect', join(folder, 'bad.sid'));
+  const malformedDump = { ...dump, frameCount: dump.frameCount + 1 };
+  const badJson = join(folder, 'bad.json');
+  await writeFile(badJson, JSON.stringify(malformedDump));
+  runFails('validate-json', badJson);
+  runFails('json-to-midi', badJson, '-o', midi);
+  console.log('Verification OK: deterministic JSON, PAL timing, SID/JSON validation, and MIDI structure');
 } finally {
   await rm(folder, { recursive: true, force: true });
 }

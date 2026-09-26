@@ -4,7 +4,7 @@ import { basename, extname, resolve } from 'node:path';
 import { JsonToMidiConverter, MidiConversionOptions } from '../services/sid/JsonToMidi';
 import { parseSidHeader } from '../services/sid/SidParser';
 import { SidPlayer } from '../services/sid/SidPlayer';
-import { SidDump } from '../services/sid/SidTypes';
+import { assertCompatibleSidDump, SidDump } from '../services/sid/SidTypes';
 
 type ParsedOptions = { out?: string; jsonOut?: string; compact: boolean; seconds: number; song: number; midi: MidiConversionOptions };
 
@@ -63,15 +63,6 @@ function parseOptions(args: string[]): { input: string; options: ParsedOptions }
   return { input, options };
 }
 
-function validateDump(value: unknown): asserts value is SidDump {
-  if (!value || typeof value !== 'object') throw new Error('Invalid JSON: expected a SID dump object');
-  const dump = value as Partial<SidDump>;
-  if (!dump.metadata || typeof dump.metadata.magic !== 'string' || !Array.isArray(dump.frames)) throw new Error('Invalid JSON: metadata and frames are required');
-  for (const [index, frame] of dump.frames.entries()) {
-    if (!Array.isArray(frame.registers) || frame.registers.length !== 25 || !frame.registers.every((value) => Number.isInteger(value) && value >= 0 && value <= 255) || !Array.isArray(frame.voices) || frame.voices.length !== 3 || !frame.filter) throw new Error(`Invalid JSON: frame ${index} is not a compatible SID capture`);
-  }
-}
-
 async function writeDump(output: string, dump: SidDump, compact: boolean): Promise<void> {
   await writeFile(output, `${JSON.stringify(dump, null, compact ? undefined : 2)}\n`, 'utf8');
 }
@@ -86,7 +77,7 @@ async function sidToJson(input: string, options: ParsedOptions): Promise<void> {
 
 async function jsonToMidi(input: string, options: ParsedOptions): Promise<void> {
   const parsed: unknown = JSON.parse(await readFile(input, 'utf8'));
-  validateDump(parsed);
+  assertCompatibleSidDump(parsed);
   const output = options.out ?? defaultOutput(input, '.mid');
   const midi = new JsonToMidiConverter().convert(parsed, options.midi);
   await writeFile(output, midi);
@@ -110,7 +101,7 @@ async function inspect(input: string): Promise<void> {
 
 async function validateJson(input: string): Promise<void> {
   const parsed: unknown = JSON.parse(await readFile(input, 'utf8'));
-  validateDump(parsed);
+  assertCompatibleSidDump(parsed);
   console.log(`JSON OK: ${parsed.metadata.magic} ${parsed.metadata.title || ''}, ${parsed.frames.length} frames`);
 }
 

@@ -1,7 +1,18 @@
 {
   "name": "sid-to-json-converter",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Offline PSID/RSID register tracing with JSON analysis and Standard MIDI export.",
+  "keywords": [
+    "commodore-64",
+    "c64",
+    "sid",
+    "psid",
+    "rsid",
+    "midi",
+    "music",
+    "retrocomputing"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

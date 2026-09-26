@@ -1,5 +1,5 @@
 
-import { SidDump } from './SidTypes';
+import { assertCompatibleSidDump, SidDump } from './SidTypes';
 
 // MIDI Constants
 const TPQ = 480; // Ticks per Quarter note
@@ -146,6 +146,7 @@ interface MidiEvent { tick: number; type: string; data: number[], priority: numb
 export class JsonToMidiConverter {
 
   public convert(dump: SidDump, options: MidiConversionOptions = {}): Uint8Array {
+    assertCompatibleSidDump(dump);
     const writer = new MidiWriter();
 
     // Header
@@ -195,7 +196,7 @@ export class JsonToMidiConverter {
     else if (effectiveQuantize === '1/16T') gridTicks = TPQ / 6;
     else if (effectiveQuantize === '1/32') gridTicks = TPQ / 8;
 
-    let effectiveShift = options.octaveShift !== undefined ? options.octaveShift : 0;
+    const effectiveShift = options.octaveShift !== undefined ? options.octaveShift : 0;
 
     const frameCount = dump.frames ? dump.frames.length : 0;
     const opts: Required<MidiConversionOptions> = {
@@ -492,7 +493,6 @@ export class JsonToMidiConverter {
     let freqAccum = 0;
     let noteCount = 0;
     let wasGateHigh = false;
-    let wasTriggered = false;
 
     for (let f = 0; f < frameCount; f++) {
         const frame = dump.frames[f];
@@ -585,7 +585,6 @@ export class JsonToMidiConverter {
         }
 
         wasGateHigh = gateHigh;
-        wasTriggered = isTriggered;
     }
 
     if (activeSegment) {
@@ -683,7 +682,7 @@ export class JsonToMidiConverter {
       return output;
   }
 
-  private detectBestQuantization(dump: SidDump, fps: number): '1/8' | '1/16' | '1/32' | 'none' {
+  private detectBestQuantization(dump: SidDump, fps: number): '1/8' | '1/8T' | '1/16' | '1/16T' | '1/32' | 'none' {
       const startTimes: number[] = [];
       const ticksPerSec = TICKS_PER_SEC;
 
@@ -707,10 +706,14 @@ export class JsonToMidiConverter {
 
       const g32 = checkGrid(TPQ / 8);
       const g16 = checkGrid(TPQ / 4);
+      const g16T = checkGrid(TPQ / 6);
       const g8 = checkGrid(TPQ / 2);
+      const g8T = checkGrid(TPQ / 3);
 
       if (g8 > 0.75) return '1/8';
+      if (g8T > 0.75) return '1/8T';
       if (g16 > 0.70) return '1/16';
+      if (g16T > 0.70) return '1/16T';
       if (g32 > 0.60) return '1/32';
 
       return 'none';

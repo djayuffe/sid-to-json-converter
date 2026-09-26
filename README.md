@@ -10,6 +10,8 @@ A browser-based Commodore 64 SID analysis tool. It loads PSID/RSID files, execut
 - Frame JSON containing all 25 SID registers, voice pitch/envelope/waveform state, gate triggers, and filter state.
 - JSON-to-MIDI type-1 export with conductor, voice and optional drum tracks.
 - Pitch bend, ADSR/pulse/filter automation, noise-to-drum mapping, optional quantization, gap merging and arpeggio-to-chord conversion.
+- Defensive JSON validation at every conversion boundary: frame ordering, register ranges, voice/filter values and capture duration must be internally consistent.
+- Smart quantization evaluates straight and triplet grids, while preserving unquantized timing when there is no confident match.
 - Fully bundled React/Vite/Tailwind build: no CDN, import map or API key is required at runtime.
 
 ## Run locally
@@ -40,7 +42,7 @@ pnpm run cli -- sid-to-midi tune.sid --json-out tune.json --quantize auto -o tun
 
 `sid-to-json` defaults to a 60-second capture and writes JSON alongside the source SID. `sid-to-midi` performs capture and MIDI export in one command, with optional `--json-out`. `json-to-midi` accepts `--quantize` (including `1/16T` and `1/8T` triplets), `--octave-shift`, `--min-note-frames`, `--note-duration`, `--no-expression`, `--minimal-automation`, `--no-merge-gaps`, `--no-drums`, and `--arps-to-chords`. Use `validate-json` before batch MIDI conversion. Run `pnpm run cli -- --help` for the complete reference.
 
-`pnpm run verify` creates an isolated synthetic PSID fixture and checks malformed-input rejection, deterministic SID-to-JSON output, PAL frame timing, and the complete MIDI chunk/end-marker structure.
+`pnpm run verify` creates an isolated synthetic PSID fixture and checks malformed SID/JSON rejection, deterministic SID-to-JSON output, PAL frame timing, custom-IRQ PSID dispatch, and the complete MIDI chunk/end-marker structure.
 
 ## MIDI interpretation
 
